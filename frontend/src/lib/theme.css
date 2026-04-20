@@ -1,0 +1,160 @@
+/* Design Token System — Data Portal V2 */
+
+/*
+ * Typography: Century Gothic (headings/display) + Corbel (body/UI).
+ * Both are system fonts — no font files needed.
+ */
+
+:root {
+  /* Brand colors */
+  --color-riviere: #15123E;
+  --color-riviere-dark: #1a1756;
+  --color-horizon: #0E78BE;
+  --color-southern-sky: #5DA7DC;
+  --color-white: #FFFFFF;
+
+  /* Accent colors */
+  --color-steel: #ABB9C6;
+  --color-iris: #6A3A84;
+  --color-flamingo: #C7335E;
+  --color-rouge: #B31828;
+  --color-geaux: #EC9952;
+  --color-algae: #3d8b45;
+  --color-file: #0B7D5A;
+
+  /* Semantic tokens */
+  --bg-primary: #f4f6f9;
+  --bg-card: var(--color-white);
+  --bg-sidebar: var(--color-white);
+  --bg-header: var(--color-riviere);
+  --bg-hover: #e8f0fe;
+  --bg-selected: #e0edfa;
+  --bg-muted: #f8f9fa;
+
+  --text-primary: #1a1a2e;
+  --text-secondary: #4a4a68;
+  --text-muted: #6e6e86;
+  --text-on-dark: var(--color-white);
+
+  --accent-primary: var(--color-horizon);
+  --accent-hover: var(--color-southern-sky);
+  --positive: var(--color-algae);
+  --negative: var(--color-rouge);
+  --warning-bg: #fff8e1;
+  --warning-border: #ffc107;
+  --warning-text: #7a6200;
+
+  /* Highlight (for selected/highlighted geo rows) */
+  --highlight-bg: #fef3cd;
+  --highlight-bg-hover: #fde68a;
+  --highlight-text: #1a1a2e;
+
+  /* Cell selection (Excel-like stats feature) */
+  --selection-bg: #cde4f7;
+  --selection-border: #1f4e79;
+
+  --border-default: #e2e4e9;
+  --border-light: #eef0f4;
+  --border-medium: #c8ccd4;
+
+  --shadow-card: 0 1px 3px rgba(21,18,62,0.06), 0 1px 2px rgba(21,18,62,0.04);
+  --shadow-elevated: 0 4px 16px rgba(21,18,62,0.10), 0 2px 6px rgba(21,18,62,0.06);
+  --shadow-subtle: 0 1px 2px rgba(0,0,0,0.04);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  --font-primary: 'Century Gothic', CenturyGothic, AppleGothic, -apple-system, sans-serif;
+  --font-body: Corbel, 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', -apple-system, sans-serif;
+  --font-stack: var(--font-body);
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* Chart palette — 8 ordered colors */
+  --chart-1: var(--color-horizon);
+  --chart-2: var(--color-geaux);
+  --chart-3: var(--color-algae);
+  --chart-4: var(--color-iris);
+  --chart-5: var(--color-flamingo);
+  --chart-6: var(--color-southern-sky);
+  --chart-7: var(--color-file);
+  --chart-8: var(--color-steel);
+
+  /* Touch target minimum */
+  --touch-min: 44px;
+
+  /* Breakpoints (for reference; used in media queries) */
+  /* mobile: <640px, tablet: 641-1024px, desktop: >1024px */
+}
+
+/* ── Animation Keyframes ── */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(14,120,190,0); }
+  50% { box-shadow: 0 0 0 6px rgba(14,120,190,0.08); }
+}
+
+@keyframes draw-line {
+  from { stroke-dashoffset: 1000; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes grain {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-2%, -2%); }
+  20% { transform: translate(3%, 1%); }
+  30% { transform: translate(-1%, 3%); }
+  40% { transform: translate(2%, -1%); }
+  50% { transform: translate(-3%, 2%); }
+  60% { transform: translate(1%, -2%); }
+  70% { transform: translate(-2%, 1%); }
+  80% { transform: translate(3%, -1%); }
+  90% { transform: translate(-1%, 2%); }
+}
+
+/* iOS zoom prevention — inputs/selects below 16px font cause viewport zoom on iPhone */
+@media (max-width: 640px) {
+  select, input, textarea {
+    font-size: 16px !important;
+  }
+}
