@@ -172,27 +172,34 @@
 <div class="app">
   <a class="skip-link" href="#main-content">Skip to main content</a>
 
-  <!-- Header / Nav Bar -->
-  <header>
-    <div class="header-row">
-      <div class="header-brand">
-        <button class="hamburger" on:click={toggleMobileMenu} aria-label="Toggle menu">
-          <span class="hamburger-line" class:open={mobileMenuOpen}></span>
-          <span class="hamburger-line" class:open={mobileMenuOpen}></span>
-          <span class="hamburger-line" class:open={mobileMenuOpen}></span>
-        </button>
-        <div>
-          <h1><a href="/" class="title-link" on:click|preventDefault={() => navigateTo('landing')}>Data Portal</a></h1>
-          <p class="subtitle">Regional economic data explorer</p>
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" on:click={toggleMobileMenu} aria-label="Toggle menu">
+        <span class="hamburger-line" class:open={mobileMenuOpen}></span>
+        <span class="hamburger-line" class:open={mobileMenuOpen}></span>
+        <span class="hamburger-line" class:open={mobileMenuOpen}></span>
+      </button>
+      <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+      <div class="logo" on:click={() => navigateTo('landing')}>
+        <div class="logo-mark">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 8h4M9 4v8M12 6a2 2 0 010 4" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
         </div>
+        <span>Partner<span class="logo-text-iq">IQ</span></span>
       </div>
-      <nav class="header-nav">
-        <button class="nav-btn" class:active={$currentView === 'landing'} on:click={() => navigateTo('landing')}>Home</button>
-        <button class="nav-btn" class:active={$currentView === 'data'} on:click={() => navigateTo('data')}>Data Pull</button>
-        <button class="nav-btn" class:active={$currentView === 'dashboard'} on:click={() => navigateTo('dashboard')}>Dashboard</button>
-        <button class="nav-btn" class:active={$currentView === 'peers'} on:click={() => navigateTo('peers')}>Peer Finder</button>
-        <button class="nav-btn" class:active={showMethodology} on:click={() => { if ($currentView !== 'data') { currentView.set('data'); showMethodology = true; } else { showMethodology = !showMethodology; } }}>Methodology</button>
+      <nav class="nav-links">
+        <button class="nav-link" class:active={$currentView === 'landing'} on:click={() => navigateTo('landing')}>Home</button>
+        <button class="nav-link" class:active={$currentView === 'dashboard'} on:click={() => navigateTo('dashboard')}>Dashboard</button>
+        <button class="nav-link" class:active={$currentView === 'data'} on:click={() => navigateTo('data')}>Explorer</button>
+        <button class="nav-link" class:active={$currentView === 'peers'} on:click={() => navigateTo('peers')}>Peer Finder</button>
+        <button class="nav-link" class:active={showMethodology} on:click={() => { if ($currentView !== 'data') { currentView.set('data'); showMethodology = true; } else { showMethodology = !showMethodology; } }}>Methodology</button>
       </nav>
+    </div>
+    <div class="topbar-right">
+      <div class="chamber-badge">Chamber Portal</div>
+      <div class="avatar">JD</div>
     </div>
   </header>
 
@@ -449,6 +456,7 @@
 
   :global(h1, h2, h3) {
     font-family: var(--font-primary);
+    color: var(--text-primary);
   }
 
   :global(:focus-visible) {
@@ -481,76 +489,116 @@
     height: auto;
   }
 
-  /* Header */
-  header {
-    background: linear-gradient(135deg, var(--color-riviere) 0%, var(--color-riviere-dark) 100%);
-    padding: 0.75rem 1.5rem;
-    margin-bottom: 1.25rem;
-    border-radius: 0;
-    box-shadow: 0 2px 12px rgba(21,18,62,0.2), 0 1px 3px rgba(0,0,0,0.1);
-    position: relative;
-    overflow: hidden;
+  /* Topbar */
+  .topbar {
+    background: var(--color-riviere);
+    color: white;
+    padding: 0 32px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    margin-bottom: 0;
   }
 
-  /* Subtle animated accent line at bottom of header */
-  header::after {
+  .topbar::after {
     content: '';
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 2px;
-    background: linear-gradient(90deg,
-      transparent 0%,
-      var(--color-southern-sky) 20%,
-      var(--color-horizon) 50%,
-      var(--color-southern-sky) 80%,
-      transparent 100%
-    );
-    opacity: 0.5;
+    height: 3px;
+    background: linear-gradient(90deg, var(--color-horizon), var(--color-southern-sky), var(--color-geaux));
   }
-  .header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1440px;
-    margin: 0 auto;
-  }
-  .header-brand {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-  h1 { margin: 0; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; }
-  .title-link { color: var(--text-on-dark); text-decoration: none; transition: opacity var(--transition-fast); }
-  .title-link:hover { opacity: 0.88; }
-  .subtitle { margin: 0.15rem 0 0; font-size: 0.72rem; color: var(--color-steel); letter-spacing: 0.02em; font-weight: 400; }
 
-  .header-nav {
+  .topbar-left {
     display: flex;
-    gap: 0.35rem;
+    align-items: center;
+    gap: 28px;
   }
-  .nav-btn {
-    padding: 0.4rem 1rem;
-    font-size: 0.76rem;
-    font-weight: 500;
-    border: 1px solid rgba(255,255,255,0.15);
-    background: transparent;
-    color: rgba(255,255,255,0.8);
-    border-radius: var(--radius-sm);
+
+  .logo {
+    font-family: var(--font-primary);
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 0.2px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     cursor: pointer;
-    transition: all var(--transition-fast);
-    font-family: var(--font-body);
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
+    color: white;
+    user-select: none;
   }
-  .nav-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-on-dark); border-color: rgba(255,255,255,0.3); transform: translateY(-1px); }
-  .nav-btn.active {
-    background: rgba(255,255,255,0.16);
-    border-color: rgba(255,255,255,0.35);
-    color: var(--text-on-dark);
-    font-weight: 600;
-    box-shadow: 0 0 12px rgba(93,167,220,0.15);
+
+  .logo-mark {
+    width: 30px;
+    height: 30px;
+    background: linear-gradient(135deg, var(--color-horizon), var(--color-southern-sky));
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .logo-text-iq { color: var(--color-southern-sky); }
+
+  .nav-links {
+    display: flex;
+    gap: 2px;
+  }
+
+  .nav-link {
+    padding: 7px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.55);
+    cursor: pointer;
+    transition: all 0.2s;
+    background: none;
+    border: none;
+    font-family: var(--font-body);
+  }
+  .nav-link:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.06); }
+  .nav-link.active {
+    color: white;
+    background: rgba(255,255,255,0.1);
+    box-shadow: 0 0 8px rgba(93,167,220,0.15);
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .chamber-badge {
+    font-size: 12.5px;
+    font-family: var(--font-body);
+    color: rgba(255,255,255,0.5);
+    padding: 4px 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 100px;
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-horizon), var(--color-southern-sky));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12.5px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    font-family: var(--font-primary);
+    flex-shrink: 0;
   }
 
   /* Hamburger (mobile only) */
@@ -580,7 +628,7 @@
     display: flex;
     gap: 1.25rem;
     align-items: flex-start;
-    padding: 0 1.25rem 1.5rem;
+    padding: 1.25rem 1.25rem 1.5rem;
   }
 
   .sidebar-backdrop {
@@ -595,8 +643,8 @@
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-card);
     position: sticky;
-    top: 1rem;
-    max-height: calc(100vh - 6rem);
+    top: calc(56px + 1rem);
+    max-height: calc(100vh - 56px - 2rem);
     overflow-y: auto;
     border: 1px solid var(--border-light);
     animation: fadeIn 0.3s ease;
@@ -847,7 +895,7 @@
       color: var(--text-on-dark);
       font-weight: 600;
     }
-    .header-row { padding: 0; }
+    .topbar { padding: 0 16px; }
 
     .layout {
       flex-direction: column;
@@ -899,6 +947,6 @@
 
   /* Desktop */
   @media (min-width: 1025px) {
-    header { border-radius: var(--radius-md) var(--radius-md) 0 0; }
+    .topbar { border-radius: 0; }
   }
 </style>

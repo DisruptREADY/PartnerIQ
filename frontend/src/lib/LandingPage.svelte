@@ -91,10 +91,10 @@
     <div class="hero-grain" aria-hidden="true"></div>
 
     <div class="hero-inner">
-      <div class="hero-badge">Federal Data Explorer</div>
-      <h2 class="hero-title">Data Portal</h2>
-      <p class="hero-tagline">Regional economic data at your fingertips</p>
-      <p class="hero-sub">Explore metros, states, counties, and more with data from Census, BLS, BEA, and FRED.</p>
+      <div class="hero-badge">Economic Intelligence Platform</div>
+      <h2 class="hero-title">Partner<span class="hero-iq">IQ</span></h2>
+      <p class="hero-tagline">Your region's economic story, in real time</p>
+      <p class="hero-sub">Live data from Census, BLS, BEA, and FRED — powering smarter decisions for chambers of commerce.</p>
     </div>
   </section>
 
@@ -271,9 +271,12 @@
     margin: 0 0 0.6rem;
     letter-spacing: -0.04em;
     line-height: 1.05;
+    font-family: var(--font-primary);
     opacity: 0;
     animation: fadeInUp 0.7s ease 0.35s forwards;
   }
+
+  .hero-iq { color: var(--color-southern-sky); }
 
   .hero-tagline {
     font-size: 1.15rem;
