@@ -3,7 +3,8 @@ import asyncio
 import logging
 from typing import List
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
+from ..auth import require_auth
 from pydantic import BaseModel
 
 from ..peers import (
@@ -14,7 +15,7 @@ from ..peers import (
 )
 
 log = logging.getLogger("data_portal")
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_auth)])
 
 _VALID_GEO_TYPES = {"msa", "county", "state", "micro", "place"}
 _VALID_PROFILES = {"balanced", "economic", "demographic", "geographic"}
