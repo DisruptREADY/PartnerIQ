@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Render build script: install Python deps + build Svelte frontend
+# Local build script: install Python deps + build Svelte frontend
 set -e
 
 # Python dependencies
