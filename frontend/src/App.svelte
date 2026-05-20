@@ -13,6 +13,7 @@
   import DataNotes from './lib/DataNotes.svelte';
   import LoginPage from './lib/LoginPage.svelte';
   import { initAuth, authReady, isAuthenticated, authUser, logout, getToken } from './lib/auth.js';
+  import { API_BASE, apiFetch } from './lib/api.js';
   import {
     selectedGeos, selectedIndicators, selectedYears, selectedGeoType,
     acsDataset, coliAdjust, inflationAdjust, inflationBaseYear,
@@ -90,7 +91,7 @@
         body.inflation_base_year = $inflationBaseYear;
       }
 
-      const resp = await fetch('/api/data', {
+      const resp = await fetch(`${API_BASE}/api/data`, {
         method: 'POST',
         headers,
         body: JSON.stringify(body),
@@ -180,7 +181,7 @@
 
   // CPI table for inflation base year dropdown
   let cpiYears = [];
-  fetch('/api/cpi').then(r => r.ok ? r.json() : {}).then(data => {
+  apiFetch('/api/cpi').then(r => r.ok ? r.json() : {}).then(data => {
     if (data && data.years) cpiYears = data.years;
   }).catch(() => {});
 </script>

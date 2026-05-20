@@ -1,5 +1,6 @@
 <script>
   import { createEventDispatcher, onMount } from 'svelte';
+  import { apiFetch } from './api.js';
 
   const dispatch = createEventDispatcher();
 
@@ -29,8 +30,8 @@
 
     try {
       const [geoResp, indResp] = await Promise.all([
-        fetch('/api/geographies?type=msa'),
-        fetch('/api/indicators'),
+        apiFetch('/api/geographies?type=msa'),
+        apiFetch('/api/indicators'),
       ]);
       if (geoResp.ok) {
         const geos = await geoResp.json();

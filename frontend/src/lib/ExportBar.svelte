@@ -1,5 +1,6 @@
 <script>
   import { results, selectedGeos, selectedIndicators, selectedYears, selectedGeoType, acsDataset, coliAdjust, inflationAdjust, inflationBaseYear } from '../stores.js';
+  import { apiFetch } from './api.js';
 
   $: columns = $results?.columns || [];
   $: rows = $results?.rows || [];
@@ -56,7 +57,7 @@
     if (!hasData) return;
     exporting = true;
     try {
-      const resp = await fetch('/api/export/xlsx', {
+      const resp = await apiFetch('/api/export/xlsx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

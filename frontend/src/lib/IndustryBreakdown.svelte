@@ -2,6 +2,7 @@
   import { onDestroy } from 'svelte';
   import { selectedGeos, highlightGeo } from '../stores.js';
   import { Chart } from './chartDefaults.js';
+  import { apiFetch } from './api.js';
 
   let loading = false;
   let errorMsg = null;
@@ -97,7 +98,7 @@
     chartGeo = '';
 
     try {
-      const resp = await fetch('/api/breakdown/industry', {
+      const resp = await apiFetch('/api/breakdown/industry', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
