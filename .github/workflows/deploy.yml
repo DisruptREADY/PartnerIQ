@@ -83,8 +83,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy to Lambda
+      - name: Upload zip to S3 then deploy to Lambda
         run: |
+          aws s3 cp lambda.zip s3://${{ secrets.S3_BUCKET }}/lambda/lambda.zip
           aws lambda update-function-code \
             --function-name partneriq-api \
-            --zip-file fileb://lambda.zip
+            --s3-bucket ${{ secrets.S3_BUCKET }} \
+            --s3-key lambda/lambda.zip
