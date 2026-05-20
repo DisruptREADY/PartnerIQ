@@ -21,6 +21,12 @@ read -p "AUTH0_DOMAIN (e.g. disruptready.us.auth0.com): " AUTH0_DOMAIN
 read -p "AUTH0_AUDIENCE (e.g. https://partneriq.api): " AUTH0_AUDIENCE
 read -p "ALLOWED_ORIGINS (e.g. https://partneriq.pellerintechnology.com,http://localhost:5173): " ALLOWED_ORIGINS
 
+# Trim leading/trailing whitespace from all inputs
+AUTH0_DOMAIN="${AUTH0_DOMAIN// /}"
+AUTH0_AUDIENCE="${AUTH0_AUDIENCE// /}"
+ALLOWED_ORIGINS="${ALLOWED_ORIGINS## }"
+ALLOWED_ORIGINS="${ALLOWED_ORIGINS%% }"
+
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 echo ""
 echo "→ AWS Account: $ACCOUNT_ID  |  Region: $REGION"
@@ -71,7 +77,16 @@ echo "[4/6] Deploying Lambda function: $LAMBDA_NAME"
 LAMBDA_ARN=$(aws lambda get-function --function-name "$LAMBDA_NAME" \
   --query Configuration.FunctionArn --output text 2>/dev/null || echo "")
 
-ENV_VARS="Variables={AUTH0_DOMAIN=$AUTH0_DOMAIN,AUTH0_AUDIENCE=$AUTH0_AUDIENCE,ALLOWED_ORIGINS=$ALLOWED_ORIGINS}"
+# Write env vars to a JSON file — avoids comma-parsing issues with shorthand
+cat > /tmp/lambda-env.json <<JSON
+{
+  "Variables": {
+    "AUTH0_DOMAIN": "$AUTH0_DOMAIN",
+    "AUTH0_AUDIENCE": "$AUTH0_AUDIENCE",
+    "ALLOWED_ORIGINS": "$ALLOWED_ORIGINS"
+  }
+}
+JSON
 
 if [ -z "$LAMBDA_ARN" ]; then
   LAMBDA_ARN=$(aws lambda create-function \
@@ -82,7 +97,7 @@ if [ -z "$LAMBDA_ARN" ]; then
     --zip-file fileb:///tmp/lambda.zip \
     --timeout 30 \
     --memory-size 512 \
-    --environment "$ENV_VARS" \
+    --environment file:///tmp/lambda-env.json \
     --query FunctionArn --output text)
   echo "  ✓ Lambda created"
 else
@@ -92,7 +107,7 @@ else
   sleep 5
   aws lambda update-function-configuration \
     --function-name "$LAMBDA_NAME" \
-    --environment "$ENV_VARS" --output text > /dev/null
+    --environment file:///tmp/lambda-env.json --output text > /dev/null
   echo "  ✓ Lambda updated"
 fi
 
