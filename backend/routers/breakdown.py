@@ -4,7 +4,8 @@ import time
 from typing import Any, Dict, List, Optional
 
 import requests
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from ..auth import require_auth
 from pydantic import BaseModel
 
 from ..config import BLS_API_KEY
@@ -13,7 +14,7 @@ from ..routers.geography import get_metros
 from ..utils import build_cbsa_to_state_fips, request_with_retry
 
 log = logging.getLogger("data_portal")
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_auth)])
 
 BLS_API_URL = "https://api.bls.gov/publicAPI/v2/timeseries/data/"
 

@@ -147,3 +147,10 @@ if _static_dir.is_dir():
         if full_path and file_path.is_file():
             return FileResponse(file_path)
         return FileResponse(_static_dir / "index.html")
+
+# Lambda handler (used by AWS Lambda + API Gateway)
+try:
+    from mangum import Mangum
+    handler = Mangum(app, lifespan="off")
+except ImportError:
+    pass

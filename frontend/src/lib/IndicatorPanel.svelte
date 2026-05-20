@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { selectedIndicators, selectedGeoType, indicatorsMeta } from '../stores.js';
+  import { apiFetch } from './api.js';
 
   let allIndicators = [];
   let categoryOrder = [];
@@ -20,8 +21,8 @@
   onMount(async () => {
     try {
       const [indResp, catResp] = await Promise.all([
-        fetch('/api/indicators'),
-        fetch('/api/indicators/categories'),
+        apiFetch('/api/indicators'),
+        apiFetch('/api/indicators/categories'),
       ]);
       allIndicators = await indResp.json();
       categoryOrder = await catResp.json();

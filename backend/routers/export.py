@@ -3,7 +3,8 @@ import io
 import logging
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from ..auth import require_auth
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -11,7 +12,7 @@ from ..config import INDICATORS
 from ..cache import get_cached
 
 log = logging.getLogger("data_portal")
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_auth)])
 
 
 class ExportRequest(BaseModel):
