@@ -5,7 +5,8 @@ import math
 from typing import List, Optional
 
 import pandas as pd
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from ..auth import require_auth
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -24,7 +25,7 @@ from ..coli import get_coli_data
 from ..cpi import get_cpi_table
 
 log = logging.getLogger("data_portal")
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_auth)])
 
 SOURCE_YEARS = {
     "census": CENSUS_YEARS,

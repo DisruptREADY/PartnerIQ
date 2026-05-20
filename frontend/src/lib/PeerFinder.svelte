@@ -5,6 +5,7 @@
     peerWeightProfile, peerResults,
     selectedGeos, selectedGeoType, currentView
   } from '../stores.js';
+  import { apiFetch } from './api.js';
 
   const GEO_TYPES = [
     { value: 'msa', label: 'MSA' },
@@ -119,7 +120,7 @@
     } catch {}
 
     try {
-      const resp = await fetch('/api/peers', {
+      const resp = await apiFetch('/api/peers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { dashboardGeo, selectedGeoType } from '../stores.js';
   import KPICard from './KPICard.svelte';
+  import { apiFetch } from './api.js';
   import TrendChart from './TrendChart.svelte';
   import PopulationPyramid from './PopulationPyramid.svelte';
   import DashboardMap from './DashboardMap.svelte';
@@ -162,7 +163,7 @@
         acs_dataset: 'acs1',
       };
 
-      const resp = await fetch('/api/data', {
+      const resp = await apiFetch('/api/data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

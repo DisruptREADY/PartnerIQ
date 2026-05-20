@@ -1,4 +1,5 @@
 <script>
+  import { onMount } from 'svelte';
   import './lib/theme.css';
   import GeoPicker from './lib/GeoPicker.svelte';
   import IndicatorPanel from './lib/IndicatorPanel.svelte';
@@ -10,6 +11,9 @@
   import IndustryBreakdown from './lib/IndustryBreakdown.svelte';
   import OccupationBreakdown from './lib/OccupationBreakdown.svelte';
   import DataNotes from './lib/DataNotes.svelte';
+  import LoginPage from './lib/LoginPage.svelte';
+  import { initAuth, authReady, isAuthenticated, authUser, logout, getToken } from './lib/auth.js';
+  import { API_BASE, apiFetch } from './lib/api.js';
   import {
     selectedGeos, selectedIndicators, selectedYears, selectedGeoType,
     acsDataset, coliAdjust, inflationAdjust, inflationBaseYear,
@@ -29,21 +33,30 @@
   import('./lib/MapView.svelte').then(m => MapView = m.default).catch(e => console.error('Failed to load MapView:', e));
   import('./lib/PeerFinder.svelte').then(m => PeerFinder = m.default).catch(e => console.error('Failed to load PeerFinder:', e));
 
+  // Initialise Auth0 on mount
+  onMount(() => { initAuth(); });
+
   // Restore selections from URL params (runs before components mount)
   initFromUrl();
 
   // Auto-fetch when URL restore completes (GeoPicker resolved pending geos)
   let autoFetched = false;
-  $: if ($urlRestoreReady && !autoFetched) {
+  $: if ($urlRestoreReady && !autoFetched && $isAuthenticated) {
     autoFetched = true;
     fetchData();
   }
 
   $: canFetch = $selectedGeos.length > 0 && $selectedIndicators.length > 0 && $selectedYears.length > 0;
 
+  // Derived user display
+  $: userName = $authUser?.name || $authUser?.email || 'User';
+  $: userInitials = userName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  $: userPicture = $authUser?.picture || null;
+
   let jobMessage = '';
   let mobileMenuOpen = false;
   let fetchController = null;
+  let showUserMenu = false;
 
   async function fetchData() {
     if (!canFetch) return;
@@ -61,6 +74,10 @@
     jobMessage = 'Sending request...';
 
     try {
+      const token = await getToken();
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const body = {
         geo_ids: $selectedGeos.map(g => g.id || g.cbsa),
         indicators: $selectedIndicators,
@@ -74,9 +91,9 @@
         body.inflation_base_year = $inflationBaseYear;
       }
 
-      const resp = await fetch('/api/data', {
+      const resp = await fetch(`${API_BASE}/api/data`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(body),
         signal,
       });
@@ -164,35 +181,75 @@
 
   // CPI table for inflation base year dropdown
   let cpiYears = [];
-  fetch('/api/cpi').then(r => r.ok ? r.json() : {}).then(data => {
+  apiFetch('/api/cpi').then(r => r.ok ? r.json() : {}).then(data => {
     if (data && data.years) cpiYears = data.years;
   }).catch(() => {});
 </script>
 
+<!-- Auth loading splash -->
+{#if !$authReady}
+  <div class="auth-splash">
+    <div class="auth-splash-inner">
+      <div class="logo-mark splash-mark">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M4 10h5M11 5v10M15 7.5a2.5 2.5 0 010 5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="spinner splash-spin"></div>
+    </div>
+  </div>
+{:else if !$isAuthenticated}
+  <LoginPage />
+{:else}
+
 <div class="app">
   <a class="skip-link" href="#main-content">Skip to main content</a>
 
-  <!-- Header / Nav Bar -->
-  <header>
-    <div class="header-row">
-      <div class="header-brand">
-        <button class="hamburger" on:click={toggleMobileMenu} aria-label="Toggle menu">
-          <span class="hamburger-line" class:open={mobileMenuOpen}></span>
-          <span class="hamburger-line" class:open={mobileMenuOpen}></span>
-          <span class="hamburger-line" class:open={mobileMenuOpen}></span>
-        </button>
-        <div>
-          <h1><a href="/" class="title-link" on:click|preventDefault={() => navigateTo('landing')}>Data Portal</a></h1>
-          <p class="subtitle">Regional economic data explorer</p>
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" on:click={toggleMobileMenu} aria-label="Toggle menu">
+        <span class="hamburger-line" class:open={mobileMenuOpen}></span>
+        <span class="hamburger-line" class:open={mobileMenuOpen}></span>
+        <span class="hamburger-line" class:open={mobileMenuOpen}></span>
+      </button>
+      <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+      <div class="logo" on:click={() => navigateTo('landing')}>
+        <div class="logo-mark">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 8h4M9 4v8M12 6a2 2 0 010 4" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
         </div>
+        <span>Partner<span class="logo-text-iq">IQ</span></span>
       </div>
-      <nav class="header-nav">
-        <button class="nav-btn" class:active={$currentView === 'landing'} on:click={() => navigateTo('landing')}>Home</button>
-        <button class="nav-btn" class:active={$currentView === 'data'} on:click={() => navigateTo('data')}>Data Pull</button>
-        <button class="nav-btn" class:active={$currentView === 'dashboard'} on:click={() => navigateTo('dashboard')}>Dashboard</button>
-        <button class="nav-btn" class:active={$currentView === 'peers'} on:click={() => navigateTo('peers')}>Peer Finder</button>
-        <button class="nav-btn" class:active={showMethodology} on:click={() => { if ($currentView !== 'data') { currentView.set('data'); showMethodology = true; } else { showMethodology = !showMethodology; } }}>Methodology</button>
+      <nav class="nav-links">
+        <button class="nav-link" class:active={$currentView === 'landing'} on:click={() => navigateTo('landing')}>Home</button>
+        <button class="nav-link" class:active={$currentView === 'dashboard'} on:click={() => navigateTo('dashboard')}>Dashboard</button>
+        <button class="nav-link" class:active={$currentView === 'data'} on:click={() => navigateTo('data')}>Explorer</button>
+        <button class="nav-link" class:active={$currentView === 'peers'} on:click={() => navigateTo('peers')}>Peer Finder</button>
+        <button class="nav-link" class:active={showMethodology} on:click={() => { if ($currentView !== 'data') { currentView.set('data'); showMethodology = true; } else { showMethodology = !showMethodology; } }}>Methodology</button>
       </nav>
+    </div>
+    <div class="topbar-right">
+      <div class="chamber-badge">Chamber Portal</div>
+      <!-- User avatar + dropdown -->
+      <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+      <div class="avatar-wrap" on:click={() => showUserMenu = !showUserMenu}>
+        {#if userPicture}
+          <img class="avatar avatar-img" src={userPicture} alt={userName} />
+        {:else}
+          <div class="avatar">{userInitials}</div>
+        {/if}
+        {#if showUserMenu}
+          <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+          <div class="user-menu" on:click|stopPropagation>
+            <div class="user-menu-name">{userName}</div>
+            <div class="user-menu-email">{$authUser?.email || ''}</div>
+            <hr class="user-menu-divider" />
+            <button class="user-menu-btn" on:click={logout}>Sign Out</button>
+          </div>
+        {/if}
+      </div>
     </div>
   </header>
 
@@ -434,6 +491,8 @@
   {/if}
 </div>
 
+{/if}
+
 <style>
   :global(body) {
     margin: 0;
@@ -449,12 +508,106 @@
 
   :global(h1, h2, h3) {
     font-family: var(--font-primary);
+    color: var(--text-primary);
   }
 
   :global(:focus-visible) {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
   }
+
+  /* ── Auth loading splash ── */
+  .auth-splash {
+    min-height: 100vh;
+    background: var(--color-riviere);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .auth-splash-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  .splash-mark {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--color-horizon), var(--color-southern-sky));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .splash-spin {
+    width: 28px;
+    height: 28px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: var(--color-southern-sky);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  /* ── User menu ── */
+  .avatar-wrap {
+    position: relative;
+    cursor: pointer;
+  }
+  .avatar-img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255,255,255,0.25);
+  }
+  .user-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    background: white;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-elevated);
+    min-width: 200px;
+    padding: 12px 0 8px;
+    z-index: 200;
+    animation: scaleIn 0.15s ease;
+  }
+  .user-menu-name {
+    padding: 0 16px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .user-menu-email {
+    padding: 2px 16px 0;
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .user-menu-divider {
+    border: none;
+    border-top: 1px solid var(--border-light);
+    margin: 10px 0 6px;
+  }
+  .user-menu-btn {
+    width: 100%;
+    padding: 8px 16px;
+    text-align: left;
+    background: none;
+    border: none;
+    font-size: 13px;
+    font-family: var(--font-body);
+    color: var(--color-rouge);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .user-menu-btn:hover { background: #fff4f4; }
 
   .app { max-width: 1440px; margin: 0 auto; padding: 0; }
 
@@ -481,76 +634,116 @@
     height: auto;
   }
 
-  /* Header */
-  header {
-    background: linear-gradient(135deg, var(--color-riviere) 0%, var(--color-riviere-dark) 100%);
-    padding: 0.75rem 1.5rem;
-    margin-bottom: 1.25rem;
-    border-radius: 0;
-    box-shadow: 0 2px 12px rgba(21,18,62,0.2), 0 1px 3px rgba(0,0,0,0.1);
-    position: relative;
-    overflow: hidden;
+  /* Topbar */
+  .topbar {
+    background: var(--color-riviere);
+    color: white;
+    padding: 0 32px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    margin-bottom: 0;
   }
 
-  /* Subtle animated accent line at bottom of header */
-  header::after {
+  .topbar::after {
     content: '';
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 2px;
-    background: linear-gradient(90deg,
-      transparent 0%,
-      var(--color-southern-sky) 20%,
-      var(--color-horizon) 50%,
-      var(--color-southern-sky) 80%,
-      transparent 100%
-    );
-    opacity: 0.5;
+    height: 3px;
+    background: linear-gradient(90deg, var(--color-horizon), var(--color-southern-sky), var(--color-geaux));
   }
-  .header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1440px;
-    margin: 0 auto;
-  }
-  .header-brand {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-  h1 { margin: 0; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; }
-  .title-link { color: var(--text-on-dark); text-decoration: none; transition: opacity var(--transition-fast); }
-  .title-link:hover { opacity: 0.88; }
-  .subtitle { margin: 0.15rem 0 0; font-size: 0.72rem; color: var(--color-steel); letter-spacing: 0.02em; font-weight: 400; }
 
-  .header-nav {
+  .topbar-left {
     display: flex;
-    gap: 0.35rem;
+    align-items: center;
+    gap: 28px;
   }
-  .nav-btn {
-    padding: 0.4rem 1rem;
-    font-size: 0.76rem;
-    font-weight: 500;
-    border: 1px solid rgba(255,255,255,0.15);
-    background: transparent;
-    color: rgba(255,255,255,0.8);
-    border-radius: var(--radius-sm);
+
+  .logo {
+    font-family: var(--font-primary);
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 0.2px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     cursor: pointer;
-    transition: all var(--transition-fast);
-    font-family: var(--font-body);
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
+    color: white;
+    user-select: none;
   }
-  .nav-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-on-dark); border-color: rgba(255,255,255,0.3); transform: translateY(-1px); }
-  .nav-btn.active {
-    background: rgba(255,255,255,0.16);
-    border-color: rgba(255,255,255,0.35);
-    color: var(--text-on-dark);
-    font-weight: 600;
-    box-shadow: 0 0 12px rgba(93,167,220,0.15);
+
+  .logo-mark {
+    width: 30px;
+    height: 30px;
+    background: linear-gradient(135deg, var(--color-horizon), var(--color-southern-sky));
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .logo-text-iq { color: var(--color-southern-sky); }
+
+  .nav-links {
+    display: flex;
+    gap: 2px;
+  }
+
+  .nav-link {
+    padding: 7px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.55);
+    cursor: pointer;
+    transition: all 0.2s;
+    background: none;
+    border: none;
+    font-family: var(--font-body);
+  }
+  .nav-link:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.06); }
+  .nav-link.active {
+    color: white;
+    background: rgba(255,255,255,0.1);
+    box-shadow: 0 0 8px rgba(93,167,220,0.15);
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .chamber-badge {
+    font-size: 12.5px;
+    font-family: var(--font-body);
+    color: rgba(255,255,255,0.5);
+    padding: 4px 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 100px;
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-horizon), var(--color-southern-sky));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12.5px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    font-family: var(--font-primary);
+    flex-shrink: 0;
   }
 
   /* Hamburger (mobile only) */
@@ -580,7 +773,7 @@
     display: flex;
     gap: 1.25rem;
     align-items: flex-start;
-    padding: 0 1.25rem 1.5rem;
+    padding: 1.25rem 1.25rem 1.5rem;
   }
 
   .sidebar-backdrop {
@@ -595,8 +788,8 @@
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-card);
     position: sticky;
-    top: 1rem;
-    max-height: calc(100vh - 6rem);
+    top: calc(56px + 1rem);
+    max-height: calc(100vh - 56px - 2rem);
     overflow-y: auto;
     border: 1px solid var(--border-light);
     animation: fadeIn 0.3s ease;
@@ -847,7 +1040,7 @@
       color: var(--text-on-dark);
       font-weight: 600;
     }
-    .header-row { padding: 0; }
+    .topbar { padding: 0 16px; }
 
     .layout {
       flex-direction: column;
@@ -899,6 +1092,6 @@
 
   /* Desktop */
   @media (min-width: 1025px) {
-    header { border-radius: var(--radius-md) var(--radius-md) 0 0; }
+    .topbar { border-radius: 0; }
   }
 </style>
