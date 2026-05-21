@@ -67,7 +67,7 @@ sleep 10
 # ── 3. Build & package Lambda ─────────────────────────────────────────────────
 echo "[3/6] Building Lambda package"
 rm -rf /tmp/partneriq-lambda && mkdir /tmp/partneriq-lambda
-pip install -r requirements.txt --target /tmp/partneriq-lambda -q
+pip3 install -r requirements.txt --target /tmp/partneriq-lambda -q
 cp -r backend /tmp/partneriq-lambda/backend
 cd /tmp/partneriq-lambda && zip -r /tmp/lambda.zip . -q && cd -
 echo "  ✓ lambda.zip ready ($(du -sh /tmp/lambda.zip | cut -f1))"
@@ -91,7 +91,7 @@ JSON
 if [ -z "$LAMBDA_ARN" ]; then
   LAMBDA_ARN=$(aws lambda create-function \
     --function-name "$LAMBDA_NAME" \
-    --runtime python3.11 \
+    --runtime python3.12 \
     --role "$ROLE_ARN" \
     --handler backend.main.handler \
     --zip-file fileb:///tmp/lambda.zip \
@@ -116,43 +116,67 @@ echo "[5/6] Creating API Gateway: $API_NAME"
 API_ID=$(aws apigatewayv2 get-apis \
   --query "Items[?Name=='$API_NAME'].ApiId" --output text 2>/dev/null || echo "")
 
+# Build CORS JSON from ALLOWED_ORIGINS (handles comma-separated list)
+IFS=',' read -ra ORIGIN_ARRAY <<< "$ALLOWED_ORIGINS"
+ORIGINS_JSON=$(printf '"%s",' "${ORIGIN_ARRAY[@]}" | sed 's/,$//')
+CORS_JSON="{\"AllowOrigins\":[$ORIGINS_JSON],\"AllowMethods\":[\"GET\",\"POST\",\"PUT\",\"DELETE\",\"OPTIONS\"],\"AllowHeaders\":[\"Content-Type\",\"Authorization\"],\"MaxAge\":86400}"
+
 if [ -z "$API_ID" ]; then
   API_ID=$(aws apigatewayv2 create-api \
     --name "$API_NAME" \
     --protocol-type HTTP \
-    --cors-configuration \
-      "AllowOrigins=$ALLOWED_ORIGINS,AllowMethods=*,AllowHeaders=*" \
+    --cors-configuration "$CORS_JSON" \
     --query ApiId --output text)
+  echo "  ✓ API created: $API_ID"
+else
+  aws apigatewayv2 update-api --api-id "$API_ID" \
+    --cors-configuration "$CORS_JSON" --output text > /dev/null
+  echo "  ✓ API already exists: $API_ID (CORS updated)"
+fi
 
-  # Lambda permission
-  aws lambda add-permission \
-    --function-name "$LAMBDA_NAME" \
-    --statement-id apigateway-invoke \
-    --action lambda:InvokeFunction \
-    --principal apigateway.amazonaws.com \
-    --source-arn "arn:aws:execute-api:$REGION:$ACCOUNT_ID:$API_ID/*/*" \
-    --output text > /dev/null
+# Lambda permission (idempotent)
+aws lambda add-permission \
+  --function-name "$LAMBDA_NAME" \
+  --statement-id apigateway-invoke \
+  --action lambda:InvokeFunction \
+  --principal apigateway.amazonaws.com \
+  --source-arn "arn:aws:execute-api:$REGION:$ACCOUNT_ID:$API_ID/*/*" \
+  --output text > /dev/null 2>&1 || true
 
-  # Integration
+# Integration — always ensure one exists
+INTEGRATION_ID=$(aws apigatewayv2 get-integrations --api-id "$API_ID" \
+  --query "Items[0].IntegrationId" --output text 2>/dev/null || echo "")
+
+if [ -z "$INTEGRATION_ID" ] || [ "$INTEGRATION_ID" = "None" ]; then
   INTEGRATION_ID=$(aws apigatewayv2 create-integration \
     --api-id "$API_ID" \
     --integration-type AWS_PROXY \
     --integration-uri "arn:aws:lambda:$REGION:$ACCOUNT_ID:function:$LAMBDA_NAME" \
     --payload-format-version "2.0" \
     --query IntegrationId --output text)
+  echo "  ✓ Integration created: $INTEGRATION_ID"
+fi
 
-  # Route
+# Route — ensure ANY /{proxy+} is wired to the integration
+ROUTE_ID=$(aws apigatewayv2 get-routes --api-id "$API_ID" \
+  --query "Items[?RouteKey=='ANY /{proxy+}'].RouteId" --output text 2>/dev/null || echo "")
+
+if [ -z "$ROUTE_ID" ] || [ "$ROUTE_ID" = "None" ]; then
   aws apigatewayv2 create-route \
     --api-id "$API_ID" \
     --route-key "ANY /{proxy+}" \
     --target "integrations/$INTEGRATION_ID" --output text > /dev/null
-
-  # Stage
-  aws apigatewayv2 create-stage \
-    --api-id "$API_ID" \
-    --stage-name '$default' \
-    --auto-deploy --output text > /dev/null
+else
+  aws apigatewayv2 update-route \
+    --api-id "$API_ID" --route-id "$ROUTE_ID" \
+    --target "integrations/$INTEGRATION_ID" --output text > /dev/null
 fi
+
+# Stage
+aws apigatewayv2 create-stage \
+  --api-id "$API_ID" \
+  --stage-name '$default' \
+  --auto-deploy --output text > /dev/null 2>&1 || true
 
 API_URL="https://$API_ID.execute-api.$REGION.amazonaws.com"
 echo "  ✓ API Gateway URL: $API_URL"
