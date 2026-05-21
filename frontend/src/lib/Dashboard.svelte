@@ -52,7 +52,7 @@
     allGeos = [];
     allStates = [];
     try {
-      const resp = await fetch(`/api/geographies?type=${type}`);
+      const resp = await apiFetch(`/api/geographies?type=${type}`);
       if (resp.ok) {
         allGeos = await resp.json();
         // Extract state list for filtering

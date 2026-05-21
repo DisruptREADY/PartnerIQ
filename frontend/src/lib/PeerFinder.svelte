@@ -34,7 +34,7 @@
   // Fetch dimensions when geo type changes
   async function loadDimensions(geoType) {
     try {
-      const resp = await fetch(`/api/peers/dimensions?geo_type=${geoType}`);
+      const resp = await apiFetch(`/api/peers/dimensions?geo_type=${geoType}`);
       if (resp.ok) {
         const data = await resp.json();
         availableDimensions = data.dimensions || [];
@@ -47,7 +47,7 @@
   // Fetch geography list
   async function loadGeos(geoType) {
     try {
-      const resp = await fetch(`/api/geographies?type=${geoType}`);
+      const resp = await apiFetch(`/api/geographies?type=${geoType}`);
       if (resp.ok) {
         geoOptions = await resp.json();
       }
@@ -110,7 +110,7 @@
 
     // Check status first
     try {
-      const statusResp = await fetch(`/api/peers/status?geo_type=${$peerGeoType}&year=2024`);
+      const statusResp = await apiFetch(`/api/peers/status?geo_type=${$peerGeoType}&year=2024`);
       if (statusResp.ok) {
         const status = await statusResp.json();
         if (!status.ready) {

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
   import { selectedGeos, selectedGeoType, highlightGeo, pendingUrlGeoIds, urlRestoreReady } from '../stores.js';
+  import { apiFetch } from './api.js';
 
   let allGeos = [];
   let searchText = '';
@@ -36,7 +37,7 @@
     loadingGeos = true;
     allGeos = [];
     try {
-      const resp = await fetch(`/api/geographies?type=${geoType}`);
+      const resp = await apiFetch(`/api/geographies?type=${geoType}`);
       const data = await resp.json();
       allGeos = data;
 
